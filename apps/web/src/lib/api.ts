@@ -40,6 +40,10 @@ export async function deleteTag(id: number) {
   await request<void>(`/api/tags/${id}`, { method: "DELETE" });
 }
 
+export async function deleteImage(id: number) {
+  await request<void>(`/api/images/${id}`, { method: "DELETE" });
+}
+
 export async function uploadImages(files: File[], tags: string[]) {
   const form = new FormData();
   files.forEach((file) => form.append("images", file));

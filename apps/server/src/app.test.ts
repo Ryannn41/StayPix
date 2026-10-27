@@ -113,4 +113,21 @@ describe("StayPix API", () => {
     expect(downloaded.headers["content-disposition"]).toContain("attachment");
     expect(downloaded.headers["content-type"]).toMatch(/^image\/png/);
   });
+
+  it("deletes both the image record and its original file", async () => {
+    const uploaded = await request(app)
+      .post("/api/images")
+      .field("tags", JSON.stringify(["客房"]))
+      .attach("images", ORIGINAL_PNG, { filename: "delete-me.png", contentType: "image/png" })
+      .expect(201);
+    const id = uploaded.body.images[0].id;
+    const storedName = database.getImage(id)!.storedName;
+    const originalPath = path.join(dataDir, "originals", storedName);
+
+    await request(app).delete(`/api/images/${id}`).expect(204);
+
+    expect(database.getImage(id)).toBeUndefined();
+    await expect(readFile(originalPath)).rejects.toMatchObject({ code: "ENOENT" });
+    await request(app).get(`/api/images/${id}/download`).expect(404);
+  });
 });

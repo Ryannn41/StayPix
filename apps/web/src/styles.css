@@ -52,6 +52,13 @@ button { color: inherit; }
 .secondary-button { border: 1px solid var(--line); background: #fff; }
 .secondary-button:hover:not(:disabled) { background: #f5f5f0; }
 .primary-button:disabled, .secondary-button:disabled { opacity: .55; cursor: not-allowed; }
+.danger-button {
+  border: 0; border-radius: 10px; padding: 11px 17px; display: inline-flex; align-items: center;
+  justify-content: center; gap: 8px; color: #fff; background: #a8443b; font-weight: 600;
+  box-shadow: 0 8px 20px rgba(140, 46, 39, .18); cursor: pointer; transition: .18s;
+}
+.danger-button:hover:not(:disabled) { background: #8f352e; transform: translateY(-1px); }
+.danger-button:disabled { opacity: .6; cursor: wait; }
 
 main { max-width: 1320px; margin: 0 auto; padding: 0 40px 60px; }
 .hero {
@@ -129,6 +136,9 @@ main { max-width: 1320px; margin: 0 auto; padding: 0 40px 60px; }
   display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none;
 }
 .image-actions a { margin-left: auto; background: #f2d3a6; }
+.image-actions .delete-image { color: #a43f37; padding-inline: 9px; }
+.image-actions .delete-image:hover:not(:disabled) { background: #fbe7e4; }
+.image-actions .delete-image:disabled { opacity: .65; cursor: wait; }
 .image-info { padding: 16px; }
 .image-info > strong { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .metadata { display: flex; flex-wrap: wrap; gap: 6px 12px; color: var(--muted); font-size: 10px; margin: 7px 0 12px; }
@@ -162,6 +172,20 @@ footer {
   animation: rise-in .22s ease-out;
 }
 .compact-dialog { width: min(540px, 100%); }
+.delete-dialog { width: min(460px, 100%); text-align: center; padding: 34px; }
+.delete-symbol {
+  width: 58px; height: 58px; margin: 0 auto 17px; display: grid; place-items: center;
+  color: #a8443b; background: #f8e5e1; border-radius: 17px;
+}
+.delete-copy h2 { margin: 6px 0 15px; font-size: 25px; }
+.delete-copy > strong {
+  display: block; max-width: 100%; padding: 10px 12px; border: 1px solid #e5ddd8; border-radius: 9px;
+  overflow: hidden; color: #394b45; background: #f5f3ee; font-size: 12px; text-overflow: ellipsis; white-space: nowrap;
+}
+.delete-copy p { margin: 14px 5px 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.delete-dialog .error-message { text-align: left; margin-top: 16px; }
+.delete-dialog .dialog-actions { justify-content: stretch; }
+.delete-dialog .dialog-actions > button { flex: 1; }
 .dialog-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
 .dialog-header h2 { margin: 5px 0 0; font-size: 25px; }
 .icon-button { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 9px; background: transparent; display: grid; place-items: center; cursor: pointer; }

@@ -176,6 +176,25 @@ export async function createApp(options: AppOptions) {
     response.json({ image });
   });
 
+  app.delete("/api/images/:id", async (request, response, next) => {
+    const id = parseImageId(request.params.id);
+    const image = database.getImage(id);
+    if (!image) {
+      response.status(404).json({ message: "图片不存在" });
+      return;
+    }
+
+    try {
+      await unlink(path.join(originalsDir, image.storedName)).catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== "ENOENT") throw error;
+      });
+      database.deleteImage(id);
+      response.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
   function sendImage(disposition: "inline" | "attachment") {
     return (request: Request, response: Response) => {
       const image = database.getImage(parseImageId(request.params.id));

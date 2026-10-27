@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   Check,
   Download,
   Image as ImageIcon,
@@ -14,6 +15,7 @@ import {
 import type { ImageAsset, Tag } from "@staypix/shared";
 import {
   assetUrl,
+  deleteImage,
   deleteTag,
   listImages,
   listTags,
@@ -271,6 +273,44 @@ function EditTagsDialog({ image, tags, onClose, onSaved }: EditTagsDialogProps) 
   );
 }
 
+interface DeleteDialogProps {
+  title: string;
+  name: string;
+  description: string;
+  busy: boolean;
+  error: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+function DeleteDialog({ title, name, description, busy, error, onCancel, onConfirm }: DeleteDialogProps) {
+  return (
+    <div className="dialog-backdrop" onMouseDown={(event) => event.target === event.currentTarget && !busy && onCancel()}>
+      <section className="dialog delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-title">
+        <div className="delete-symbol"><AlertTriangle size={26} /></div>
+        <div className="delete-copy">
+          <span className="eyebrow">不可撤销的操作</span>
+          <h2 id="delete-title">{title}</h2>
+          <strong>{name}</strong>
+          <p>{description}</p>
+        </div>
+        {error && <p className="error-message">{error}</p>}
+        <div className="dialog-actions">
+          <button className="secondary-button" onClick={onCancel} disabled={busy}>取消</button>
+          <button className="danger-button" onClick={onConfirm} disabled={busy}>
+            {busy ? <LoaderCircle className="spin" size={18} /> : <Trash2 size={18} />}
+            {busy ? "正在删除…" : "确认删除"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+type PendingDelete =
+  | { kind: "image"; value: ImageAsset }
+  | { kind: "tag"; value: Tag };
+
 export default function App() {
   const [images, setImages] = useState<ImageAsset[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -280,6 +320,9 @@ export default function App() {
   const [error, setError] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const [editingImage, setEditingImage] = useState<ImageAsset | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   async function refresh(tagIds = selectedTagIds) {
     setLoading(true);
@@ -312,20 +355,33 @@ export default function App() {
     setSelectedTagIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   }
 
-  async function removeCustomTag(tag: Tag) {
-    if (tag.isSystem || !window.confirm(`确定删除标签“${tag.name}”吗？图片本身不会被删除。`)) return;
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleteBusy(true);
+    setDeleteError("");
     try {
-      await deleteTag(tag.id);
-      setSelectedTagIds((current) => current.filter((id) => id !== tag.id));
-      setTags((current) => current.filter((item) => item.id !== tag.id));
-      setImages((current) =>
-        current.map((image) => ({
-          ...image,
-          tags: image.tags.filter((item) => item.id !== tag.id),
-        })),
-      );
+      if (pendingDelete.kind === "tag") {
+        const tag = pendingDelete.value;
+        await deleteTag(tag.id);
+        setSelectedTagIds((current) => current.filter((id) => id !== tag.id));
+        setTags((current) => current.filter((item) => item.id !== tag.id));
+        setImages((current) =>
+          current.map((image) => ({
+            ...image,
+            tags: image.tags.filter((item) => item.id !== tag.id),
+          })),
+        );
+      } else {
+        const image = pendingDelete.value;
+        await deleteImage(image.id);
+        setImages((current) => current.filter((item) => item.id !== image.id));
+        if (editingImage?.id === image.id) setEditingImage(null);
+      }
+      setPendingDelete(null);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "删除标签失败");
+      setDeleteError(reason instanceof Error ? reason.message : "删除失败，请稍后重试");
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -376,7 +432,15 @@ export default function App() {
               ) : (
                 <span className={`filter custom-filter ${selectedTagIds.includes(tag.id) ? "active" : ""}`} key={tag.id}>
                   <button onClick={() => toggleFilter(tag.id)}>{tag.name}</button>
-                  <button className="delete-filter" onClick={() => void removeCustomTag(tag)} aria-label={`删除标签 ${tag.name}`} title="删除自定义标签">
+                  <button
+                    className="delete-filter"
+                    onClick={() => {
+                      setDeleteError("");
+                      setPendingDelete({ kind: "tag", value: tag });
+                    }}
+                    aria-label={`删除标签 ${tag.name}`}
+                    title="删除自定义标签"
+                  >
                     <Trash2 size={12} />
                   </button>
                 </span>
@@ -406,6 +470,17 @@ export default function App() {
                       <div className="image-actions">
                         <button onClick={() => setEditingImage(image)}><TagIcon size={16} /> 编辑标签</button>
                         <a href={assetUrl(image.downloadUrl)} download><Download size={16} /> 原图</a>
+                        <button
+                          className="delete-image"
+                          onClick={() => {
+                            setDeleteError("");
+                            setPendingDelete({ kind: "image", value: image });
+                          }}
+                          aria-label={`删除 ${image.originalName}`}
+                          title="永久删除图片"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
                     <div className="image-info">
@@ -435,6 +510,24 @@ export default function App() {
             setImages((current) => current.map((image) => image.id === updated.id ? updated : image));
             void listTags().then(setTags);
           }}
+        />
+      )}
+      {pendingDelete && (
+        <DeleteDialog
+          title={pendingDelete.kind === "image" ? "删除这张图片？" : "删除这个标签？"}
+          name={pendingDelete.kind === "image" ? pendingDelete.value.originalName : pendingDelete.value.name}
+          description={
+            pendingDelete.kind === "image"
+              ? "数据库记录和原始图片文件都会被永久删除，之后无法恢复。"
+              : "该标签会从所有图片中移除，但图片本身会继续保留。"
+          }
+          busy={deleteBusy}
+          error={deleteError}
+          onCancel={() => {
+            setPendingDelete(null);
+            setDeleteError("");
+          }}
+          onConfirm={() => void confirmDelete()}
         />
       )}
     </div>

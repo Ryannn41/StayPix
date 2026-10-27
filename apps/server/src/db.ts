@@ -185,6 +185,10 @@ export function createDatabase(filename: string) {
       return row ? toImage(row) : undefined;
     },
 
+    deleteImage(id: number) {
+      return db.prepare("DELETE FROM images WHERE id = ?").run(id).changes > 0;
+    },
+
     addImage(image: NewImage, tagNames: string[]) {
       const id = addImageTransaction(image, tagNames);
       return this.getImage(id)!;
