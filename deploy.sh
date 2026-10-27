@@ -16,6 +16,18 @@ fail() {
   exit 1
 }
 
+set_env_value() {
+  local key="$1"
+  local value="$2"
+  awk -v key="${key}" -v value="${value}" '
+    BEGIN { found = 0 }
+    index($0, key "=") == 1 { print key "=" value; found = 1; next }
+    { print }
+    END { if (!found) print key "=" value }
+  ' "${PROJECT_DIR}/.env" > "${PROJECT_DIR}/.env.tmp"
+  mv "${PROJECT_DIR}/.env.tmp" "${PROJECT_DIR}/.env"
+}
+
 command -v conda >/dev/null 2>&1 || fail "未找到 conda，请先确认 Conda 已安装并加入 PATH。"
 
 CONDA_BASE="$(conda info --base)"
@@ -46,19 +58,15 @@ EOF
 else
   info "保留已有 .env 配置。"
   if [[ -n "${REQUESTED_PORT}" ]]; then
-    awk -v port="${REQUESTED_PORT}" '
-      BEGIN { found = 0 }
-      /^PORT=/ { print "PORT=" port; found = 1; next }
-      { print }
-      END { if (!found) print "PORT=" port }
-    ' "${PROJECT_DIR}/.env" > "${PROJECT_DIR}/.env.tmp"
-    mv "${PROJECT_DIR}/.env.tmp" "${PROJECT_DIR}/.env"
+    set_env_value "PORT" "${REQUESTED_PORT}"
   else
     CONFIGURED_PORT="$(awk -F= '/^PORT=/{print $2; exit}' "${PROJECT_DIR}/.env")"
     PORT="${CONFIGURED_PORT:-3001}"
   fi
 fi
 
+set_env_value "HOST" "0.0.0.0"
+set_env_value "PORT" "${PORT}"
 mkdir -p "${PROJECT_DIR}/data/originals"
 
 info "构建生产版本…"

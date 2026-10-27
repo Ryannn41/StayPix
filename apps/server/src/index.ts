@@ -3,9 +3,9 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { createApp } from "./app.js";
 
-dotenv.config({ path: path.resolve(process.cwd(), ".env") });
-
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+dotenv.config({ path: path.join(projectRoot, ".env") });
+
 const dataDir = path.resolve(projectRoot, process.env.DATA_DIR ?? "data");
 const host = process.env.HOST ?? "127.0.0.1";
 const port = Number(process.env.PORT ?? 3001);

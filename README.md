@@ -35,7 +35,7 @@ cd StayPix
 ./deploy.sh
 ```
 
-脚本只会创建或更新 `fullstack` Conda 环境、安装锁定版本依赖并执行生产构建，不会安装或启动 tmux。默认端口为 `3001`，自定义端口可使用：
+脚本会创建或更新 `fullstack` Conda 环境、安装锁定版本依赖、生成监听 `0.0.0.0` 的生产配置并执行构建，不会安装或启动 tmux。默认端口为 `3001`，自定义端口可使用：
 
 ```bash
 STAYPIX_PORT=8080 ./deploy.sh
