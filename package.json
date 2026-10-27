@@ -1,0 +1,19 @@
+{
+  "name": "staypix",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,magenta \"npm run dev -w @staypix/server\" \"npm run dev -w @staypix/web\"",
+    "build": "npm run build -w @staypix/shared && npm run build -w @staypix/server && npm run build -w @staypix/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test -w @staypix/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "typescript": "^5.9.3"
+  }
+}
